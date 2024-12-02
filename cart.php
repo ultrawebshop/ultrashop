@@ -11,7 +11,7 @@ if (isset($_POST['remove'])) {
             break;
         }
     }
-    $_SESSION['cart'] = array_values($cart); // herindexeer de array
+    $_SESSION['cart'] = array_values($cart);
 }
 
 // Update aantal van een item
@@ -22,16 +22,42 @@ if (isset($_POST['update_quantity'])) {
     foreach ($cart as $key => $item) {
         if ($item['name'] === $itemToUpdate) {
             if ($newQuantity > 0) {
-                $cart[$key]['quantity'] = $newQuantity; // Bijwerken van de hoeveelheid
+                $cart[$key]['quantity'] = $newQuantity;
             } else {
-                unset($cart[$key]); // Verwijderen als het aantal 0 is
+                unset($cart[$key]);
             }
             break;
         }
     }
-    $_SESSION['cart'] = array_values($cart); // herindexeer de array
+    $_SESSION['cart'] = array_values($cart);
+}
+
+// Afreken logica
+if (isset($_POST['checkout'])) {
+    $totalAmount = 0;
+    $orderNumber = rand(1000, 9999); // Genereer een ordernummer
+    $_SESSION['order_number'] = $orderNumber; // Sla het ordernummer op in de sessie
+    $_SESSION['order_details'] = []; // Maak een array om bestelgegevens op te slaan
+
+    foreach ($cart as $item) {
+        $itemTotal = $item['price'] * $item['quantity'];
+        $_SESSION['order_details'][] = [
+            'name' => $item['name'],
+            'quantity' => $item['quantity'],
+            'total' => $itemTotal
+        ];
+        $totalAmount += $itemTotal;
+    }
+
+    // Leeg de winkelwagen
+    unset($_SESSION['cart']);
+
+    // Redirect naar bevestiging
+    header("Location: confirmation.php");
+    exit; // Stop het script
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -113,7 +139,9 @@ if (isset($_POST['update_quantity'])) {
             </tbody>
         </table>
         <h3>Totaal: €<?= number_format($total, 2); ?></h3>
-        <a href="checkout.php" class="btn btn-success">Afrekenen</a>
+        <form method="post">
+            <button type="submit" name="checkout" class="btn btn-success">Afrekenen</button>
+        </form>
     <?php endif; ?>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
