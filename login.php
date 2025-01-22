@@ -1,5 +1,7 @@
 <?php
-// Database connection setup (db.php)
+session_start();
+
+// Database connection setup
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -12,18 +14,31 @@ try {
     die("Connection failed: " . $e->getMessage());
 }
 
-// Sample Data
-$sampleProducts = [
-    ["Vape", "Electronic cigarette device", 20.00, 50],
-    ["AirPods", "Wireless earbuds", 199.00, 30],
-    ["Horloge", "Stylish wrist watch", 150.00, 20]
-];
+// Handle login
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $userInput = $_POST['username'] ?? '';
+    $passwordInput = $_POST['password'] ?? '';
 
-foreach ($sampleProducts as $product) {
-    $stmt = $conn->prepare("INSERT INTO products (name, description, price, stock) VALUES (?, ?, ?, ?)");
-    $stmt->execute($product);
+    // Query to check if the user exists
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username");
+    $stmt->bindParam(':username', $userInput);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Check if the password is correct
+    if ($user && password_verify($passwordInput, $user['password'])) {
+        // Store user information in session
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['first_name'] = $user['first_name'];
+        $_SESSION['role'] = $user['role'];
+
+        // Redirect to the home page after successful login
+        header("Location: index.php");
+        exit;
+    } else {
+        $error = "Ongeldige gebruikersnaam of wachtwoord.";
+    }
 }
-
 // Check if the user is logged in and their role
 session_start();
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
@@ -36,72 +51,19 @@ $userFirstName = isset($_SESSION['first_name']) ? $_SESSION['first_name'] : ''; 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UltraShop</title>
+    <title>Inloggen - UltraShop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #343a40;
             color: #ffffff;
         }
-
-        .navbar-dark .navbar-nav .nav-link {
-            color: #ffffff;
-        }
-
-        .navbar-dark .navbar-brand {
-            color: #ffffff;
-        }
-
         .container {
+            margin-top: 50px;
             background-color: #495057;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .text-center {
-            color: #ffffff;
-            padding: 20px 0; /* Extra space for better visual */
-        }
-
-        h1, p {
-            color: #ffffff;
-        }
-
-        .profile-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #007bff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            cursor: pointer;
-        }
-
-        .profile-dropdown {
-            position: absolute;
-            right: 0;
-            z-index: 1000;
-        }
-
-        .navbar-nav {
-            margin-right: auto; /* Push items to the left */
-        }
-
-        .welcome-area {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end; /* Aligns to the right */
-            flex-grow: 1; /* Allow margin on the left */
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .home-logo {
-                display: none; /* Hide logo on smaller screens */
-            }
         }
     </style>
 </head>
@@ -141,27 +103,24 @@ $userFirstName = isset($_SESSION['first_name']) ? $_SESSION['first_name'] : ''; 
         </div>
     </div>
 </nav>
-<div class="container mt-4">
-    <div class="text-center">
-        <h1>Welkom bij UltraShop</h1>
-        <p>De beste plek voor uw Vapes, AirPods en Horloges!</p>
-    </div>
+<div class="container">
+    <h2 class="text-center">Inloggen</h2>
+    <?php if (isset($error)): ?>
+        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+    <form method="POST" action="">
+        <div class="mb-3">
+            <label for="username" class="form-label">Gebruikersnaam</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Wachtwoord</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Inloggen</button>
+        <p class="mt-3">Nog geen account? <a href="register.php">Registreren</a></p>
+    </form>
 </div>
-<script>
-    function toggleDropdown() {
-        const dropdown = document.getElementById("profileDropdown");
-        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
-    }
-
-    // Click outside to close the dropdown
-    window.onclick = function(event) {
-        const dropdown = document.getElementById("profileDropdown");
-        const profileIcon = document.getElementById("profileIcon");
-        if (!profileIcon.contains(event.target) && dropdown.style.display === "block") {
-            dropdown.style.display = "none";
-        }
-    }
-</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
