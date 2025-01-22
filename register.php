@@ -36,6 +36,13 @@ $userFirstName = isset($_SESSION['first_name']) ? $_SESSION['first_name'] : ''; 
             color: #ffffff; /* White text */
         }
 
+        .welcome-area {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Dit zorgt ervoor dat de "Welkom, User" rechts komt te staan */
+            flex-grow: 1;
+        }
+
         .navbar-light .navbar-nav .nav-link {
             color: rgba(255, 255, 255, 0.8); /* Light links */
         }
@@ -78,14 +85,21 @@ $userFirstName = isset($_SESSION['first_name']) ? $_SESSION['first_name'] : ''; 
                 <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="vapes.php">Vapes</a></li>
                 <li class="nav-item"><a class="nav-link" href="horloges.php">Horloges</a></li>
+                <li class="nav-item"><a class="nav-link" href="airpods.php">AirPods</a></li>
                 <li class="nav-item"><a class="nav-link" href="contact.php">Contact</a></li>
+                <?php if ($isAdmin): ?>
+                    <li class="nav-item"><a class="nav-link" href="beheerproducten.php">Beheer Producten</a></li>
+                    <li class="nav-item"><a class="nav-link" href="beheerbestellingen.php">Beheer Bestellingen</a></li>
+                    <li class="nav-item"><a class="nav-link" href="beheergebruikers.php">Beheer Gebruikers</a></li>
+                <?php endif; ?>
 
-                <?php if (!$isLoggedIn): // Voeg deze conditie toe ?>
+                <?php if (!$isLoggedIn): ?>
                     <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
                     <li class="nav-item"><a class="nav-link" href="register.php">Registreren</a></li>
                 <?php endif; ?>
-
             </ul>
+
+            <!-- Verplaats de welcome-area naar de rechterkant -->
             <div class="welcome-area">
                 <?php if ($isLoggedIn): ?>
                     <span class="nav-link text-light me-2">Welkom, <?php echo htmlspecialchars($userFirstName); ?></span>

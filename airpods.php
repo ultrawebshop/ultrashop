@@ -1,5 +1,7 @@
 <?php
-// Database connection setup (db.php)
+session_start();
+
+// Databaseverbinding instellen
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -9,91 +11,94 @@ try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+    die("Databaseverbinding mislukt: " . $e->getMessage());
 }
 
+// Zoekfunctie
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Haal alle producten op uit de categorie "AirPods" met de zoekterm (indien aanwezig)
+$query = "SELECT * FROM products WHERE category = 'AirPods' AND name LIKE :searchTerm";
+$stmt = $conn->prepare($query);
+$stmt->execute([':searchTerm' => '%' . $searchTerm . '%']);
+$airpods = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Check if the user is logged in and their role
-session_start();
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
 $isLoggedIn = isset($_SESSION['user_id']);
 $userFirstName = isset($_SESSION['firstname']) ? $_SESSION['firstname'] : ''; // Assuming you store the first name in the session
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UltraShop</title>
+    <title>AirPods</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #343a40;
+            background-color: #121212;
             color: #ffffff;
         }
-
-        .navbar-dark .navbar-nav .nav-link {
-            color: #ffffff;
-        }
-
-        .navbar-dark .navbar-brand {
-            color: #ffffff;
-        }
-
-        .container {
-            background-color: #495057;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .text-center {
-            color: #ffffff;
-            padding: 20px 0; /* Extra space for better visual */
-        }
-
-        h1, p {
-            color: #ffffff;
-        }
-
-        .profile-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #007bff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            cursor: pointer;
-        }
-
-        .profile-dropdown {
-            position: absolute;
-            right: 0;
-            z-index: 1000;
-        }
-
-        .navbar-nav {
-            margin-right: auto; /* Push items to the left */
-        }
-
         .welcome-area {
             display: flex;
             align-items: center;
-            justify-content: flex-end; /* Aligns to the right */
-            flex-grow: 1; /* Allow margin on the left */
+            justify-content: flex-end; /* Dit zorgt ervoor dat de "Welkom, User" rechts komt te staan */
+            flex-grow: 1;
         }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .home-logo {
-                display: none; /* Hide logo on smaller screens */
-            }
+        .navbar-dark .navbar-nav .nav-link {
+            color: #ffffff;
+        }
+        .navbar-dark .navbar-brand {
+            color: #ffffff;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .form-control, .form-select {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            border: 1px solid #444;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #333;
+            color: #ffffff;
+            border-color: #555;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .product-card {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .product-card img {
+            max-width: 100%;
+            height: auto;
+        }
+        .product-card h5 {
+            font-size: 1.2rem;
+        }
+        .product-card p {
+            font-size: 1rem;
         }
     </style>
 </head>
 <body>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="index.php">UltraShop</a>
@@ -113,12 +118,13 @@ $userFirstName = isset($_SESSION['firstname']) ? $_SESSION['firstname'] : ''; //
                     <li class="nav-item"><a class="nav-link" href="beheergebruikers.php">Beheer Gebruikers</a></li>
                 <?php endif; ?>
 
-                <?php if (!$isLoggedIn): // Voeg deze conditie toe ?>
+                <?php if (!$isLoggedIn): ?>
                     <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
                     <li class="nav-item"><a class="nav-link" href="register.php">Registreren</a></li>
                 <?php endif; ?>
-
             </ul>
+
+            <!-- Verplaats de welcome-area naar de rechterkant -->
             <div class="welcome-area">
                 <?php if ($isLoggedIn): ?>
                     <span class="nav-link text-light me-2">Welkom, <?php echo htmlspecialchars($userFirstName); ?></span>
@@ -135,27 +141,41 @@ $userFirstName = isset($_SESSION['firstname']) ? $_SESSION['firstname'] : ''; //
         </div>
     </div>
 </nav>
+
 <div class="container mt-4">
-    <div class="text-center">
-        <h1>Welkom bij UltraShop</h1>
-        <p>De beste plek voor uw Vapes, AirPods en Horloges!</p>
+    <h1 class="text-center">AirPods</h1>
+
+    <!-- Zoekbalk -->
+    <form method="GET" action="airpods.php" class="mb-4">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Zoek op naam...">
+            <button class="btn btn-primary" type="submit">Zoeken</button>
+        </div>
+    </form>
+
+    <!-- Producten -->
+    <div class="row">
+        <?php if (count($airpods) > 0): ?>
+            <?php foreach ($airpods as $airpod): ?>
+                <div class="col-md-4 mb-4">
+                    <div class="product-card">
+                        <a href="product_detail.php?id=<?= $airpod['id'] ?>">
+                            <img src="<?= htmlspecialchars($airpod['image_path']) ?>" alt="<?= htmlspecialchars($airpod['name']) ?>">
+                            <h5><?= htmlspecialchars($airpod['name']) ?></h5>
+                            <p>&euro; <?= number_format($airpod['price'], 2) ?></p>
+                        </a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="col-12">
+                <p class="text-center">Geen AirPods gevonden voor jouw zoekopdracht.</p>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
-<script>
-    function toggleDropdown() {
-        const dropdown = document.getElementById("profileDropdown");
-        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
-    }
 
-    // Click outside to close the dropdown
-    window.onclick = function(event) {
-        const dropdown = document.getElementById("profileDropdown");
-        const profileIcon = document.getElementById("profileIcon");
-        if (!profileIcon.contains(event.target) && dropdown.style.display === "block") {
-            dropdown.style.display = "none";
-        }
-    }
-</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
